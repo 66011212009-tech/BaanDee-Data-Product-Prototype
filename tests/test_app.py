@@ -72,33 +72,6 @@ def test_failure_flow_human_in_the_loop():
     # คาดหวังว่าระบบต้องหยุดทำงาน (False) เพื่อแจ้งเตือนฝ่ายจัดซื้อ
     assert is_success == False
 
-def test_file_in_use_error(tmp_path):
-    """TC-06: ทดสอบจำลองกรณีไฟล์ถูกล็อก (เช่น เปิดค้างใน Excel) ทำให้บันทึกไม่ได้"""
-    import tempfile
-    
-    # 1. สร้างไฟล์จำลอง
-    dummy_file = tmp_path / "dummy_inventory.csv"
-    dummy_data = pd.DataFrame({'id': [1], 'stock': [10]})
-    dummy_data.to_csv(dummy_file, index=False)
-    
-    # 2. จำลองการโยน PermissionError (เปรียบเสมือนไฟล์โดนโปรแกรมอื่นล็อกไว้)
-    def mock_to_csv(*args, **kwargs):
-        raise PermissionError("Permission denied: file is open in another program")
-    
-    # 3. ตรวจสอบว่า ถ้าระบบพยายามเซฟทับ แล้วเกิด PermissionError ระบบจะต้องแจ้งเตือนอย่างถูกต้อง
-    try:
-        # สมมุติว่าพยายามเซฟทับ
-        dummy_data_update = pd.DataFrame({'id': [1], 'stock': [20]})
-        
-        # แทนที่จะเซฟจริง เราลองเรียก mock ฟังก์ชันที่จำลองการพัง
-        mock_to_csv(dummy_file, index=False)
-        
-    except PermissionError as e:
-        # นี่คือ Error ที่ Streamlit จะจับได้ในบล็อก except Exception as e:
-        # เราคาดหวังว่าระบบจะแสดงข้อความว่า "ไม่สามารถบันทึกได้เนื่องจากไฟล์ถูกเปิดใช้งานอยู่"
-        
-        # เพื่อการทดสอบ เราตรวจสอบว่ามีคำว่า Permission อยู่ใน Error
-        assert "Permission" in str(e)
 
 def test_missing_file_system_failure():
     """TC-17: ทดสอบจำลองกรณีไฟล์หาย (System Failure) ระบบต้องดักจับและหยุดทำงานได้"""

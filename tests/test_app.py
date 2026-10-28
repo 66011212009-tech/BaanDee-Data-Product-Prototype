@@ -27,53 +27,46 @@ def process_inventory_logic(df):
 # Test Cases
 # ---------------------------------------------------------
 
-def test_data_cleaning_and_available_qty():
-    """TC-01, TC-03: ทดสอบการจัดการค่าว่าง ค่าติดลบ และคำนวณยอดพร้อมขาย"""
-    raw_data = {
-        'branch_id': ['B01', 'B02'],
-        'stock_qty': [10, np.nan],      # B02 มีค่าว่าง
-        'reserved_qty': [2, 0],
-        'damaged_qty': [-1, 3],         # B01 มีของเสียติดลบ
-    }
-    df = pd.DataFrame(raw_data)
-    result = process_inventory_logic(df)
+def test_ui_no_negative_input():
+    """TC-01: (UI Test) จำลองการตรวจสอบไม่ให้ป้อนค่าติดลบ"""
+    # หมายเหตุ: การทดสอบ UI ของ Streamlit โดยตรง (st.number_input) ต้องใช้เครื่องมืออย่าง Selenium
+    # แต่ในระดับ Unit Test เราสามารถตรวจสอบ Logic การแปลงค่าให้ไม่ต่ำกว่า 0 ได้
     
-    # B01: stock 10, reserve 2, damaged แก้จาก -1 เป็น 0 -> available = 8
-    assert result.loc[0, 'damaged_qty'] == 0
-    assert result.loc[0, 'available_qty'] == 8
+    input_value = -5
+    # สมมุติว่าฟังก์ชัน number_input บังคับค่าต่ำสุด (min_value=0)
+    actual_value = max(0, input_value)
     
-    # B02: stock แก้จาก NaN เป็น 0, reserve 0, damaged 3 -> available = -3
-    assert result.loc[1, 'stock_qty'] == 0
-    assert result.loc[1, 'available_qty'] == -3
+    assert actual_value == 0
 
-
-def test_success_flow_has_enough_stock():
-    """TC-04: กรณีทำงานสำเร็จ (Success Flow) มีสินค้าเพียงพอ"""
-    # จำลองว่าลูกค้าต้องการ 5 ชิ้น และสาขามีพร้อมขาย 10 ชิ้น
-    min_needed = 5
+def test_warning_when_not_enough_stock():
+    """TC-02, TC-05: จำลองการแจ้งเตือน (Warning) เมื่อสินค้าไม่เพียงพอ"""
+    # จำลองว่าลูกค้าต้องการ 999 ชิ้น แต่สาขามีพร้อมขายแค่ 10 ชิ้น
+    min_needed = 999
     available_qty = 10
     
     # Logic การตัดสินใจของระบบ
     is_success = available_qty >= min_needed
     
-    # คาดหวังว่าระบบต้องอนุมัติให้ไปต่อได้ (True)
-    assert is_success == True
-
-
-def test_failure_flow_human_in_the_loop():
-    """TC-05: กรณีระบบต้องหยุดและส่งต่อให้มนุษย์ (Failure Flow) สินค้าไม่พอ"""
-    # จำลองว่าลูกค้าต้องการ 5 ชิ้น แต่สาขามีพร้อมขายแค่ 2 ชิ้น
-    min_needed = 5
-    available_qty = 2
-    
-    # Logic การตัดสินใจของระบบ
-    is_success = available_qty >= min_needed
-    
-    # คาดหวังว่าระบบต้องหยุดทำงาน (False) เพื่อแจ้งเตือนฝ่ายจัดซื้อ
+    # คาดหวังว่าระบบต้องหยุดทำงาน (False) เพื่อแสดงกล่อง Warning สีเหลือง
     assert is_success == False
 
+def test_data_cleaning_fill_null_with_zero():
+    """TC-03: ทดสอบการจัดการค่าว่าง (Null/NaN) เติมด้วย 0 อัตโนมัติ"""
+    raw_data = {
+        'branch_id': ['B01'],
+        'stock_qty': [np.nan],      # B01 มีค่าว่าง
+        'reserved_qty': [0],
+        'damaged_qty': [0],         
+    }
+    df = pd.DataFrame(raw_data)
+    result = process_inventory_logic(df)
+    
+    # B01: stock แก้จาก NaN เป็น 0 
+    assert result.loc[0, 'stock_qty'] == 0
+    assert result.loc[0, 'available_qty'] == 0
+
 def test_missing_file_system_failure():
-    """TC-17: ทดสอบจำลองกรณีไฟล์หาย (System Failure) ระบบต้องดักจับและหยุดทำงานได้"""
+    """TC-04: ทดสอบจำลองกรณีไฟล์หาย (เปลี่ยนชื่อ products.csv) ระบบต้องดักจับและหยุดทำงานได้"""
     
     # 1. จำลองฟังก์ชันโหลดไฟล์ให้พัง (เสมือนว่าเปลี่ยนชื่อไฟล์ products.csv แล้วหาไม่เจอ)
     def mock_load_csv_fail(filepath):

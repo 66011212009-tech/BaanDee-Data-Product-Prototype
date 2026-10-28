@@ -87,10 +87,18 @@ else:
 # 6. ฟังก์ชันบันทึกสต็อกหน้าร้าน
 st.write("---")
 st.subheader("📝 บันทึกการปรับปรุงสต็อกหน้าร้านจริง")
+
+# ตรวจสอบว่ามีการฝากข้อความสำเร็จไว้ในระบบหรือไม่ (หลังจากการรีเฟรช)
+if 'update_success_msg' in st.session_state:
+    st.success(st.session_state['update_success_msg'])
+    # เมื่อแสดงผลแล้ว ให้ลบข้อความทิ้งเพื่อไม่ให้โชว์ค้างตอนเปลี่ยนไปดูสินค้าอื่น
+    del st.session_state['update_success_msg']
+
 with st.form("update_form"):
     branch_to_update = st.selectbox("เลือกสาขาที่จะแก้ไข:", result_df[branch_col].unique())
     new_stock = st.number_input("ป้อนจำนวนสต็อกใหม่:", min_value=0, value=0)
     submitted = st.form_submit_button("บันทึกข้อมูลเข้าสู่ระบบ")
+    
     if submitted:
         # 1. อ่านไฟล์ข้อมูลดิบขึ้นมา
         file_path = 'data/raw/branch_inventory.csv'
@@ -98,17 +106,15 @@ with st.form("update_form"):
             df_update = pd.read_csv(file_path)
             
             # 2. ค้นหาแถวที่ตรงกับ สินค้า และ สาขา ที่เลือก แล้วอัปเดตค่า stock_qty
-            # เนื่องจาก selectbox คืนค่าจากคอลัมน์ product_col เราต้องหา product_id ก่อน
             product_id_val = products_df.loc[products_df[product_col] == selected_product, 'product_id'].values[0]
-            
-            # ค้นหาเงื่อนไข
             condition = (df_update['product_id'] == product_id_val) & (df_update['branch_id'] == branch_to_update)
             df_update.loc[condition, 'stock_qty'] = new_stock
             
             # 3. เซฟกลับลงไปทับไฟล์เดิม
             df_update.to_csv(file_path, index=False)
             
-            st.success(f"บันทึกสำเร็จ! อัปเดตสต็อกสินค้า {selected_product} ในสาขา {branch_to_update} เป็น {new_stock} ชิ้นเรียบร้อยแล้ว")
+            # ฝากข้อความแจ้งเตือนไว้ใน session_state แทนการใช้ st.success ตรงๆ
+            st.session_state['update_success_msg'] = f"บันทึกสำเร็จ! อัปเดตสต็อกสินค้า {selected_product} ในสาขา {branch_to_update} เป็น {new_stock} ชิ้นเรียบร้อยแล้ว"
             
             # 4. สั่งให้รีเฟรชหน้าเว็บอัตโนมัติ เพื่อให้ตารางด้านบนอัปเดตตาม
             st.rerun()

@@ -59,6 +59,9 @@ damaged_qty = cleaned_inventory['damaged_qty'] if 'damaged_qty' in cleaned_inven
 
 cleaned_inventory['available_qty'] = stock_qty - reserved_qty - damaged_qty
 
+# สร้างโฟลเดอร์ให้อัตโนมัติถ้ายังไม่มี
+os.makedirs('data/cleaned', exist_ok=True)
+
 # บันทึกไฟล์ที่ Clean แล้วเก็บไว้ใน data/cleaned/
 cleaned_inventory.to_csv('data/cleaned/cleaned_inventory.csv', index=False, encoding='utf-8-sig')
 
@@ -114,15 +117,17 @@ with st.form("update_form"):
         # 1. อ่านไฟล์ข้อมูลดิบขึ้นมา
         file_path = 'data/raw/branch_inventory.csv'
         try:
-            df_update = pd.read_csv(file_path)
+            # ❌ ลบบรรทัดเดิมทิ้ง: df_update = pd.read_csv(file_path)
+            # ✅ เปลี่ยนมาใช้ฟังก์ชันที่ดักภาษาไทยไว้แล้ว:
+            df_update = load_csv_file(file_path)
             
             # 2. ค้นหาแถวที่ตรงกับ สินค้า และ สาขา ที่เลือก แล้วอัปเดตค่า stock_qty
             product_id_val = products_df.loc[products_df[product_col] == selected_product, 'product_id'].values[0]
             condition = (df_update['product_id'] == product_id_val) & (df_update['branch_id'] == branch_to_update)
             df_update.loc[condition, 'stock_qty'] = new_stock
             
-            # 3. เซฟกลับลงไปทับไฟล์เดิม
-            df_update.to_csv(file_path, index=False)
+            # 3. เซฟกลับลงไปทับไฟล์เดิม (✅ เพิ่ม encoding='utf-8-sig' เพื่อป้องกันปัญหาไฟล์พังในอนาคต)
+            df_update.to_csv(file_path, index=False, encoding='utf-8-sig')
             
             # ฝากข้อความแจ้งเตือนไว้ใน session_state แทนการใช้ st.success ตรงๆ
             st.session_state['update_success_msg'] = f"บันทึกสำเร็จ! อัปเดตสต็อกสินค้า {selected_product} ในสาขา {branch_to_update} เป็น {new_stock} ชิ้นเรียบร้อยแล้ว"

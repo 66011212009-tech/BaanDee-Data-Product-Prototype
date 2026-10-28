@@ -114,3 +114,7 @@ with st.form("update_form"):
             st.rerun()
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {e}")
+        except PermissionError:
+            st.error("ไม่สามารถบันทึกได้เนื่องจากไฟล์ถูกเปิดใช้งานอยู่ (เช่น เปิดค้างไว้ในโปรแกรม Excel) กรุณาปิดไฟล์ก่อนทำรายการอีกครั้ง")
+        except Exception as e:
+            st.error(f"เกิดข้อผิดพลาดในการบันทึกข้อมูล: {e}")

@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import os
 
 st.set_page_config(page_title="ระบบเช็กสต็อกสินค้า BaanDee Living", layout="wide")
 st.title("🏬 ระบบช่วยตรวจสอบความพร้อมของสินค้าแต่ละสาขา")
@@ -20,13 +21,23 @@ def load_csv_file(file_path):
     return df
 
 # 1. โหลดข้อมูลดิบจากไฟล์ CSV ใน data/raw/
+file_products = 'data/raw/products.csv'
+file_inventory = 'data/raw/branch_inventory.csv'
+
+# เพิ่มโค้ดดักจับตรงนี้: ถ้าไฟล์ใดไฟล์หนึ่งหายไป ให้หยุดการทำงานและแจ้ง Error ทันที
+if not os.path.exists(file_products) or not os.path.exists(file_inventory):
+    st.error("เกิดข้อผิดพลาดในการโหลดไฟล์: ไม่พบไฟล์ฐานข้อมูล (products.csv หรือ branch_inventory.csv)")
+    st.stop()
+
+# ถ้าไฟล์อยู่ครบ ถึงจะพยายามโหลดข้อมูล
 try:
-    products_df = load_csv_file('data/raw/products.csv')
-    branch_inventory_df = load_csv_file('data/raw/branch_inventory.csv')
+    products_df = load_csv_file(file_products)
+    branch_inventory_df = load_csv_file(file_inventory)
 except Exception as e:
     st.error(f"เกิดข้อผิดพลาดในการโหลดไฟล์: {e}")
     st.stop()
-    # 2. กระบวนการ Data Cleaning (3 ปัญหา)
+
+# 2. กระบวนการ Data Cleaning (3 ปัญหา)
 cleaned_inventory = branch_inventory_df.copy()
 
 # ปัญหาที่ 1: เติมค่าว่าง (Missing Values) ด้วย 0

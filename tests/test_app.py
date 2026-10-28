@@ -72,7 +72,6 @@ def test_failure_flow_human_in_the_loop():
     # คาดหวังว่าระบบต้องหยุดทำงาน (False) เพื่อแจ้งเตือนฝ่ายจัดซื้อ
     assert is_success == False
 
-
 def test_missing_file_system_failure():
     """TC-17: ทดสอบจำลองกรณีไฟล์หาย (System Failure) ระบบต้องดักจับและหยุดทำงานได้"""
     

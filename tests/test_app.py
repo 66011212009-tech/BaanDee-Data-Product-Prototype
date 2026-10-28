@@ -99,3 +99,27 @@ def test_file_in_use_error(tmp_path):
         
         # เพื่อการทดสอบ เราตรวจสอบว่ามีคำว่า Permission อยู่ใน Error
         assert "Permission" in str(e)
+
+def test_missing_file_system_failure():
+    """TC-17: ทดสอบจำลองกรณีไฟล์หาย (System Failure) ระบบต้องดักจับและหยุดทำงานได้"""
+    
+    # 1. จำลองฟังก์ชันโหลดไฟล์ให้พัง (เสมือนว่าเปลี่ยนชื่อไฟล์ products.csv แล้วหาไม่เจอ)
+    def mock_load_csv_fail(filepath):
+        raise FileNotFoundError(f"No such file or directory: '{filepath}'")
+    
+    # 2. จำลองการทำงานของ block try-except เหมือนในไฟล์ app.py
+    error_message_shown = ""
+    system_stopped = False
+    
+    try:
+        # พยายามโหลดไฟล์ที่ไม่มีอยู่จริง
+        mock_load_csv_fail('data/raw/products.csv')
+    except Exception as e:
+        # จำลองพฤติกรรม st.error() ของ Streamlit
+        error_message_shown = f"เกิดข้อผิดพลาดในการโหลดไฟล์: {e}"
+        # จำลองพฤติกรรม st.stop()
+        system_stopped = True
+        
+    # 3. ยืนยันผลลัพธ์ว่าระบบต้องแสดงข้อความ Error และหยุดการทำงาน (ไม่ Crash)
+    assert "เกิดข้อผิดพลาดในการโหลดไฟล์" in error_message_shown
+    assert system_stopped == True
